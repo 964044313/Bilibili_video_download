@@ -19,7 +19,6 @@ from moviepy.editor import *
 import os, sys, threading
 
 
-
 from tkinter import *
 from tkinter import ttk
 from tkinter import StringVar

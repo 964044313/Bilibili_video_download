@@ -3,6 +3,7 @@
 # time: 2019/07/02--08:12
 __author__ = 'Henry'
 
+from utils.Decrypt import Decrypt
 
 '''
 项目: B站视频下载 - 多线程下载
@@ -13,7 +14,7 @@ __author__ = 'Henry'
 20190702 - 增加视频多线程下载 速度大幅提升
 '''
 
-import requests, time, hashlib, urllib.request, re, json
+import requests, time, hashlib, urllib.request, re
 from moviepy.editor import *
 import os, sys, threading
 
@@ -173,12 +174,20 @@ if __name__ == '__main__':
     # 用户输入av号或者视频链接地址
     print('*' * 30 + 'B站视频下载小助手' + '*' * 30)
     start = input('请输入您要下载的B站av号或者视频链接地址:')
-    if start.isdigit() == True:  # 如果输入的是av号
-        # 获取cid的api, 传入aid即可
-        start_url = 'https://api.bilibili.com/x/web-interface/view?aid=' + start
+
+    if start.split('/')[-1].startswith("av"):
+        if start.isdigit():  # 如果输入的是av号
+            # 获取cid的api, 传入aid即可
+            start_url = 'https://api.bilibili.com/x/web-interface/view?aid=' + start
+        else:
+            # https://www.bilibili.com/video/av46958874/?spm_id_from=333.334.b_63686965665f7265636f6d6d656e64.16
+            start_url = 'https://api.bilibili.com/x/web-interface/view?aid=' + re.search(r'/av(\d+)/*', start).group(1)
+    # 输入的是BV号
     else:
-        # https://www.bilibili.com/video/av46958874/?spm_id_from=333.334.b_63686965665f7265636f6d6d656e64.16
-        start_url = 'https://api.bilibili.com/x/web-interface/view?aid=' + re.search(r'/av(\d+)/*', start).group(1)
+        decrypt = Decrypt()
+        BV = decrypt.algorithm_dec(start)
+        start_url = 'https://api.bilibili.com/x/web-interface/view?aid=' + BV
+
 
     # 视频质量
     # <accept_format><![CDATA[flv,flv720,flv480,flv360]]></accept_format>
@@ -219,18 +228,18 @@ if __name__ == '__main__':
         th = threading.Thread(target=down_video, args=(video_list, title, start_url, page))
         # 将线程加入线程池
         threadpool.append(th)
-        
+
     # 开始线程
     for th in threadpool:
         th.start()
     # 等待所有线程运行完毕
     for th in threadpool:
         th.join()
-    
+
     # 最后合并视频
     print(title_list)
     combine_video(title_list)
-    
+
     end_time = time.time()  # 结束时间
     print('下载总耗时%.2f秒,约%.2f分钟' % (end_time - start_time, int(end_time - start_time) / 60))
     # 如果是windows系统，下载完成后打开下载目录
